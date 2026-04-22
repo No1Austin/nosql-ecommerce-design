@@ -1,3 +1,4 @@
+cat > README.md <<'EOF'
 # NoSQL Database Design for an E-Commerce Application
 
 ## Part 1: Initial Schema Design Based on Requirements
