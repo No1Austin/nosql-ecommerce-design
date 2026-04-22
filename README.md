@@ -19,19 +19,17 @@ The main entities in the system are:
 - **Products**
 - **Orders**
 
-These entities represent the core data needed for the e-commerce platform.
-
 ---
 
 ## 2. Chosen NoSQL Model
 
-A **document-based NoSQL database** such as MongoDB is a suitable choice for this application.
+A **document-based NoSQL database** (e.g., MongoDB) was selected.
 
-### Why this model was chosen:
-- It supports **flexible schemas**, which is useful for products with different attributes.
-- It stores related data together in a single document.
-- It handles **nested data** well, such as order items and customer information.
-- It supports indexing and horizontal scaling for high performance.
+### Reasons:
+- Flexible schema for different product types
+- Supports nested data (orders with items)
+- Efficient for read-heavy workloads (product browsing)
+- Scales horizontally for high traffic
 
 ---
 
@@ -53,61 +51,111 @@ A **document-based NoSQL database** such as MongoDB is a suitable choice for thi
   },
   "createdAt": "2026-04-22T10:00:00Z"
 }
----
 
-# Part 2: Refactored Schema Design
+Products Collection
+{
+  "_id": "prod_501",
+  "name": "Wireless Mouse",
+  "description": "Ergonomic wireless mouse with USB receiver",
+  "category": "Electronics",
+  "price": 25.99,
+  "stock": 320,
+  "tags": ["mouse", "wireless", "computer"],
+  "rating": 4.5,
+  "createdAt": "2026-04-22T10:10:00Z"
+}
 
-## New Requirements
 
-The system must now support:
+Orders Collection
+{
+  "_id": "order_9001",
+  "userId": "user_101",
+  "customerInfo": {
+    "name": "Alice Johnson",
+    "email": "alice@example.com",
+    "address": {
+      "street": "12 Main Street",
+      "city": "London",
+      "zip": "E1 6AN",
+      "country": "UK"
+    }
+  },
+  "items": [
+    {
+      "productId": "prod_501",
+      "productName": "Wireless Mouse",
+      "quantity": 2,
+      "price": 25.99
+    }
+  ],
+  "totalAmount": 51.98,
+  "deliveryStatus": "Processing",
+  "paymentStatus": "Paid",
+  "createdAt": "2026-04-22T10:20:00Z"
+}
 
-- large-scale analytics queries (sales trends, product performance)
-- high availability
-- partition tolerance due to increased users
+Relationships
+One user → many orders
+One order → many products
+Product data is embedded in orders to preserve historical accuracy
 
----
+Indexes and Query Patterns
+Users
+Query: find by email
+Index: email (unique)
+Products
+Queries:
+browse by category
+search by name/description
+sort by price
+Indexes:
+category
+price
+text index on name, description
+Orders
+Queries:
+find orders by user
+filter by delivery status
+recent orders
+Indexes:
+userId
+deliveryStatus
+createdAt
 
-## Refactor Strategy
 
-To meet these requirements, the design was updated using:
+Scalability and Consistency
+Products: optimized for fast reads and search
+Orders: optimized for high write throughput
+Strong consistency needed for payments and order status
+Eventual consistency acceptable for product browsing
+Part 2: Refactored Schema Design
+New Requirements
+large-scale analytics
+high availability
+partition tolerance
+Refactor Strategy
 
-- **Sharding**
-- **Replication**
-- **Denormalization**
+The design was updated using:
 
----
+Sharding
+Replication
+Denormalization
 
-## 1. Sharding
+Sharding
+Orders
+Sharded by userId or hashed _id
+Distributes high write load
+Products
+Sharded by category or hashed _id
+Supports large-scale browsing
 
-Sharding is used to distribute data across multiple nodes to improve scalability.
+Replication
+Data replicated across nodes
+Enables failover if a node fails
+Improves availability and fault tolerance
+Denormalized Analytics Collections
 
-### Orders Collection
-- Sharded by `userId` or hashed `_id`
-- This distributes high write traffic evenly across nodes
-
-### Products Collection
-- Can be sharded by `category` or hashed `_id`
-- Supports large-scale product browsing
-
----
-
-## 2. Replication
-
-Replication is used to improve availability and fault tolerance.
-
-- Data is copied across multiple nodes (replica set)
-- If one node fails, another node takes over
-- Ensures the system remains available
-
----
-
-## 3. Denormalized Analytics Collections
-
-New collections are added to support fast analytics queries.
-
-### Sales Summary
-
-```json
+Sales Summary
 {
   "_id": "2026-04-22_prod_501",
   "date": "2026-04-22",
@@ -117,7 +165,7 @@ New collections are added to support fast analytics queries.
   "unitsSold": 240,
   "revenue": 6237.60
 }
-
+Product Trends
 {
   "_id": "trend_prod_501_2026_04",
   "productId": "prod_501",
@@ -126,7 +174,7 @@ New collections are added to support fast analytics queries.
   "purchases": 2400,
   "cartAdds": 4100
 }
-
+Category Summary
 {
   "_id": "2026-04_Electronics",
   "month": "2026-04",
@@ -139,3 +187,22 @@ New collections are added to support fast analytics queries.
     "USB Hub"
   ]
 }
+
+Benefits
+Improved scalability (sharding)
+Improved availability (replication)
+Faster analytics (denormalization)
+
+Trade-offs
+Increased complexity
+More storage usage
+Possible eventual consistency
+
+
+Reflection Report
+During the schema refactor, one of the main challenges was adapting the initial design to support both transactional and analytical workloads. The original schema was efficient for storing orders and products but was not optimized for large-scale analytics queries. This required introducing new structures without affecting existing functionality.
+
+The new requirements significantly influenced the design. Sharding was used to distribute data and support high traffic, while replication improved availability and fault tolerance. Denormalized collections were introduced to store pre-aggregated data, allowing faster analytics queries without scanning large datasets.
+
+The refactor improved scalability, availability, and query performance. However, it also introduced trade-offs such as increased complexity and additional storage requirements. Overall, this process demonstrated how NoSQL database design must evolve to meet changing system requirements while balancing performance and consistency.
+
